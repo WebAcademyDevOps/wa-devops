@@ -2,12 +2,12 @@
 # vi: set ft=ruby :
 
 db_num_host=3
-db_name_prefix="nats"
+db_name_prefix="k8s"
 
 Vagrant.configure("2") do |config|
   config.trigger.before :up do |trigger|
     trigger.name = "Debugger printer"
-    trigger.warn = "Going to create #{db_num_host} - #{db_num_host} Nats instances"
+    trigger.warn = "Going to create #{db_num_host} - #{db_num_host} k8s instances"
   end
   (1..db_num_host).each do |i|
     config.vm.define "#{db_name_prefix}-#{i}" do |node|
