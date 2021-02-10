@@ -1,28 +1,37 @@
-# -*- mode: ruby -*-
-# vi: set ft=ruby :
-
-db_num_host=3
-db_name_prefix="k8s"
+IMAGE_NAME = "generic/ubuntu1804"
+N = 2
 
 Vagrant.configure("2") do |config|
-  config.trigger.before :up do |trigger|
-    trigger.name = "Debugger printer"
-    trigger.warn = "Going to create #{db_num_host} - #{db_num_host} k8s instances"
-  end
-  (1..db_num_host).each do |i|
-    config.vm.define "#{db_name_prefix}-#{i}" do |node|
+    config.ssh.insert_key = false
 
-      node.vm.network "private_network", ip: "192.168.50.#{i + 1}"
-      node.vm.box = "ubuntu/focal64"
-      node.vm.box_version = "20201210.0.0"
-      node.vm.provision "shell", path: "script.sh"
-      config.trigger.after :up,
-        name: "Finished Message",
-        info: "hello I'm #{db_name_prefix}-#{i} with 192.168.50.#{i + 1}"
-      node.vm.provider "virtualbox" do |v|
+    config.vm.provider "virtualbox" do |v|
         v.memory = 1024
-        v.cpus = 1
-      end
+        v.cpus = 2
     end
-  end
+      
+    config.vm.define "k8s-master" do |master|
+        master.vm.box = IMAGE_NAME
+        master.vm.network "private_network", ip: "192.168.50.10"
+        master.vm.hostname = "k8s-master"
+        master.vm.provision "ansible" do |ansible|
+            ansible.playbook = "kubernetes-setup/master-playbook.yml"
+            ansible.extra_vars = {
+                node_ip: "192.168.50.10",
+            }
+        end
+    end
+
+    (1..N).each do |i|
+        config.vm.define "node-#{i}" do |node|
+            node.vm.box = IMAGE_NAME
+            node.vm.network "private_network", ip: "192.168.50.#{i + 10}"
+            node.vm.hostname = "node-#{i}"
+            node.vm.provision "ansible" do |ansible|
+                ansible.playbook = "kubernetes-setup/node-playbook.yml"
+                ansible.extra_vars = {
+                    node_ip: "192.168.50.#{i + 10}",
+                }
+            end
+        end
+    end
 end
