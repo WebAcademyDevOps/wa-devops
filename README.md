@@ -1,4 +1,4 @@
-## <h2> Lazy k8s install
+## Lazy k8s install
 
 * Vagrant
 * Ansible 
